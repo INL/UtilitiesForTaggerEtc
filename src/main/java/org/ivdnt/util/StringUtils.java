@@ -3,7 +3,7 @@ package org.ivdnt.util;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -88,7 +88,7 @@ public class StringUtils
 		Pattern p = Pattern.compile("\\\\([0-9]+)");
 		Matcher m = p.matcher(s);
 		int prevEnd = 0;
-		StringBuilder sb = new StringBuilder();
+		// StringBuilder sb = new StringBuilder();
 		
 		List<Byte> bytes = new ArrayList<Byte>();
 		
@@ -127,6 +127,7 @@ public class StringUtils
 		{
 			L.add(l);
 		}
+		b.close();
 		return L;
 	}
 	
