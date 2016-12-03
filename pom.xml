@@ -3,12 +3,29 @@
   <groupId>org.ivdnt.util</groupId>
   <artifactId>UtitilyClasses</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+   <build>
+  <plugins>
+    <plugin>
+      <artifactId>maven-assembly-plugin</artifactId>
+      <configuration>
+        <archive>
+          <manifest>
+            <mainClass>nl.namescape.tagging.ImpactTaggerLemmatizerClient</mainClass>
+          </manifest>
+        </archive>
+        <descriptorRefs>
+          <descriptorRef>jar-with-dependencies</descriptorRef>
+        </descriptorRefs>
+      </configuration>
+    </plugin>
+  </plugins>
+  </build>
+  <properties>
+    <maven.compiler.source>1.7</maven.compiler.source>
+    <maven.compiler.target>1.7</maven.compiler.target>
+  </properties>
+
   <dependencies>
-  	<dependency>
-  		<groupId>org.ivdnt.util</groupId>
-  		<artifactId>UtitilyClasses</artifactId>
-  		<version>0.0.1-SNAPSHOT</version>
-  	</dependency>
   	<dependency>
   		<groupId>org.apache.ant</groupId>
   		<artifactId>ant</artifactId>
