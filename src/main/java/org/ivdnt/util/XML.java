@@ -9,19 +9,12 @@ package org.ivdnt.util;
 
 import java.util.*;
 import java.io.*;
-import java.net.URI;
-import java.net.URL;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
-import javax.xml.parsers.*;
 
 import org.w3c.dom.*;
 
@@ -419,7 +412,7 @@ public class XML extends Object
 		factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 		factory.setFeature( "http://apache.org/xml/features/dom/defer-node-expansion", false );
 		DocumentBuilder builder = factory.newDocumentBuilder();
-		URI u = new File(aFilename).toURI();
+		//URI u = new File(aFilename).toURI();
 		//There is a bug related to 4 byte UTF8 ... which has to be worked around
 		// https://issues.apache.org/jira/browse/XERCESJ-1257
 		BufferedInputStream fis = new BufferedInputStream(new FileInputStream(new File(aFilename)));
@@ -513,9 +506,10 @@ public class XML extends Object
 			if (!f.startsWith("#"))
 			{
 				//System.out.println("File " + (i + 1) + " van " + filenames.size());
-				this.parse(f);
+				XML.parse(f);
 			}
 		}
+		reader.close();
 	}
 
 	public static String documentToString(Document d)
@@ -623,8 +617,8 @@ public class XML extends Object
 			System.out.println("Gebruikswijze: <programmanaam> <lijstnaam>");
 			return;
 		}
-		XML a = new XML();
-		a.parse(args[0]);
+		
+		XML.parse(args[0]);
 	}
 
 	private static void getTextNodesBelow(List<Node> nodes, Node n)
