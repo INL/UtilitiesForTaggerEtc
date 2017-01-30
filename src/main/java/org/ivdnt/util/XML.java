@@ -23,6 +23,7 @@ import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
 
 import java.util.HashSet;
+import java.util.zip.GZIPInputStream;
 
 public class XML extends Object
 {
@@ -415,7 +416,12 @@ public class XML extends Object
 		//URI u = new File(aFilename).toURI();
 		//There is a bug related to 4 byte UTF8 ... which has to be worked around
 		// https://issues.apache.org/jira/browse/XERCESJ-1257
-		BufferedInputStream fis = new BufferedInputStream(new FileInputStream(new File(aFilename)));
+		BufferedInputStream fis;
+		if (aFilename.toLowerCase().endsWith(".gz"))
+		{
+			fis = new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(aFilename))));
+		} else
+			fis = new BufferedInputStream(new FileInputStream(new File(aFilename)));
 		BOMInputStream bommie = new BOMInputStream(fis);
 	    InputStreamReader isr = new java.io.InputStreamReader(bommie, "UTF-8");
 	    InputSource is = new InputSource(isr);
