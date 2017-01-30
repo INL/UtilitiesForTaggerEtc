@@ -4,7 +4,7 @@ package org.ivdnt.util;
  * ParseUtils.java
  *
  */
-
+import org.apache.commons.io.input.*;
 
 
 import java.util.*;
@@ -416,7 +416,8 @@ public class XML extends Object
 		//There is a bug related to 4 byte UTF8 ... which has to be worked around
 		// https://issues.apache.org/jira/browse/XERCESJ-1257
 		BufferedInputStream fis = new BufferedInputStream(new FileInputStream(new File(aFilename)));
-	    InputStreamReader isr = new java.io.InputStreamReader(fis, "UTF-8");
+		BOMInputStream bommie = new BOMInputStream(fis);
+	    InputStreamReader isr = new java.io.InputStreamReader(bommie, "UTF-8");
 	    InputSource is = new InputSource(isr);
 		Document document = builder.parse(is);
 		//Document document = builder.parse(fis);
