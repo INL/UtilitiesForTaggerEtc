@@ -295,6 +295,22 @@ public class XML extends Object
 	}
 
 
+	public static List<Element> childrenWithTagname(Element e, String tagName)
+	{
+		NodeList l = e.getChildNodes();
+		ArrayList<Element> r = new ArrayList<Element>();
+		for (int i=0; i < l.getLength(); i++)
+		{
+			if (l.item(i).getNodeType() == Node.ELEMENT_NODE)
+			{
+				Element c = (Element) l.item(i);
+				if (c.getNodeName().contains(tagName))
+					r.add(c);
+			} 
+		}
+		return r;
+	}
+
 	public static void insertChildAfter(Node n, Node after, Node newChild)
 	{
 		Node afterAfter = null;
