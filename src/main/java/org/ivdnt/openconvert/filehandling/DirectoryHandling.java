@@ -194,6 +194,7 @@ public class DirectoryHandling
 		if (f.isDirectory())
 		{
 			File[] entries = f.listFiles();
+			Arrays.sort(entries);
 			for (File x: entries)
 			{
 				String base = x.getName();
@@ -267,7 +268,10 @@ public class DirectoryHandling
 			selectedFiles[0]  = currentDirectory;
 		}
 		else
+                {
 			selectedFiles = currentDirectory.listFiles(fileFilter); // what if null?
+                        Arrays.sort(selectedFiles);
+                }
 		if (selectedFiles != null) 
 		{
 			Arrays.sort(selectedFiles);
@@ -369,6 +373,7 @@ public class DirectoryHandling
 		if (f.isDirectory())
 		{
 			File[] entries = f.listFiles();
+			Arrays.sort(entries);
 			for (File x: entries)
 			{
 				String base = x.getName();
