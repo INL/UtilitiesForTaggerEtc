@@ -1,10 +1,41 @@
 package org.ivdnt.openconvert.filehandling;
 
-import java.util.Properties;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 
-public interface SimpleInputOutputProcess 
+/**
+ * Some operations require filenames, while others are much more efficient if they chain input and outputstreams
+ * Most actions can handle both files and streams and extend this class.
+ * Others that only work with filenames should instead implement FileInputOutputProcess
+ */
+public abstract class SimpleInputOutputProcess implements FileInputOutputProcess, StreamInputOutputProcess
 {
-	public void handleFile(String inFilename, String outFilename)  throws ConversionException;
-	public void setProperties(Properties properties)  throws ConversionException;
-	public void close();
+	/**
+	 * Delegate to {@link SimpleInputOutputProcess#handleStream(InputStream, Charset, OutputStream)}, the streams are buffered, and closed after usage.
+	 *
+	 * @param inFileName
+	 * @param outFileName
+	 * @throws ConversionException
+	 */
+	@Override
+	public void handleFile(String inFileName, String outFileName) throws SimpleProcessException {
+		try (
+			FileInputStream _is = new FileInputStream(inFileName);
+			BufferedInputStream is = new BufferedInputStream(_is);
+
+			FileOutputStream _os = new FileOutputStream(outFileName);
+			BufferedOutputStream os = new BufferedOutputStream(_os);
+		) {
+			handleStream(is, null, os);
+		} catch (IOException e) {
+			System.err.println("Error when opening file(s) " + inFileName + " and " + outFileName);
+			e.printStackTrace();
+		}
+	}
 }

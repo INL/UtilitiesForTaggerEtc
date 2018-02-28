@@ -1,52 +1,58 @@
 package org.ivdnt.util;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.io.Writer;
 /*
  * ParseUtils.java
  *
  */
-import org.apache.commons.io.input.*;
-
-
-import java.util.*;
-import java.io.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import org.w3c.dom.*;
-
-import javax.xml.transform.*;
-import javax.xml.transform.dom.*;
-import javax.xml.transform.stream.*;
-
-import java.util.HashSet;
-import java.util.zip.GZIPInputStream;
-
-public class XML extends Object
+public class XML
 {
+	private XML() {}
 
-	private PrintStream stdOutput;
-	//private BufferedWriter IdFilename, IssuePage, IssuePageArticle, ArticleMetadata, ArticleZoning, IssueMeta;
-	protected boolean printZoning = false;
-	Document currentDocument = null;
-
-	// vindt geen <x> binnen <x> (is hier ook niet de bedoeling)
-
-	public static abstract class NodeAction
+	public abstract static class NodeAction
 	{
 		public abstract boolean action(Node n); // true: klaar, geen recursie
 	}
-	
-	static public void preorder(Document d, NodeAction action)
+
+	public static void preorder(Document d, NodeAction action)
 	{
 		Element r = d.getDocumentElement();
 		preorder(r,action);
 	}
-	
-	static public void preorder(Node n, NodeAction action)
+
+	public static void preorder(Node n, NodeAction action)
 	{
 		if (!action.action(n))
 		{
@@ -57,7 +63,7 @@ public class XML extends Object
 			}
 		}
 	}
-	
+
 	public static void findElementsByNameAndAttribute(List<Element> list, Element e, String elementName, String attName, String attValue, boolean recursive) // nonrecursive
 	{
 		NodeList children = e.getChildNodes();
@@ -80,7 +86,7 @@ public class XML extends Object
 			}
 		}
 	}
-	
+
 	public static void findElementsByName(List<Element> list, Element e, String elementName, boolean recursive) // nonrecursive
 	{
 		NodeList children = e.getChildNodes();
@@ -93,7 +99,7 @@ public class XML extends Object
 				if (child.getNodeName().equalsIgnoreCase(elementName))
 				{
 					list.add(child);
-					if (recursive) 
+					if (recursive)
 						findElementsByName(list, child, elementName, true);
 				}
 				else
@@ -103,7 +109,7 @@ public class XML extends Object
 			}
 		}
 	}
-	
+
 	public static void findElementsByName(List<Element> list, Element e, Set<String> elementNames, boolean recursive) // nonrecursive
 	{
 		NodeList children = e.getChildNodes();
@@ -116,7 +122,7 @@ public class XML extends Object
 				if (elementNames.contains(child.getNodeName())  || elementNames.contains(child.getLocalName()))
 				{
 					list.add(child);
-					if (recursive) 
+					if (recursive)
 						findElementsByName(list, child, elementNames, true);
 				}
 				else
@@ -126,30 +132,7 @@ public class XML extends Object
 			}
 		}
 	}
-	
-	public static void findTextNodesBelow(List<Node> list, Element e) // nonrecursive
-	{
-		NodeList children = e.getChildNodes();
-		for (int k = 0; k < children.getLength(); k++)
-		{
-			Node c = children.item(k);
-			if (c.getNodeType() == Node.ELEMENT_NODE)
-			{
-				Element child = (Element) c;
-				
-				{
-					
-				
-					 findTextNodesBelow(list, child);
-				}
-				
-			} else if (c.getNodeType() == Node.TEXT_NODE)
-			{
-				list.add(c);
-			}
-		}
-	}
-	
+
 	public static void getAllSubelements(List<Element> list, Element e, boolean recursive) // nonrecursive
 	{
 		NodeList children = e.getChildNodes();
@@ -159,13 +142,9 @@ public class XML extends Object
 			if (c.getNodeType() == Node.ELEMENT_NODE)
 			{
 				Element child = (Element) c;
-				
-				{
-					list.add(child);
-					if (recursive) 
-						 getAllSubelements(list, child, true);
-				}
-				
+				list.add(child);
+				if (recursive)
+					 getAllSubelements(list, child, true);
 			}
 		}
 	}
@@ -176,7 +155,7 @@ public class XML extends Object
 		if (e.getNodeName().equalsIgnoreCase(elementName))
 		{
 			list.add(e);
-		};
+		}
 		NodeList children = e.getChildNodes();
 		for (int k = 0; k < children.getLength(); k++)
 		{
@@ -191,33 +170,33 @@ public class XML extends Object
 
 	public static List<Element> getElementsByTagname(Element e, String elementName, boolean recursive)
 	{
-		List<Element> list = new ArrayList<Element>();
+		List<Element> list = new ArrayList<>();
 		if (e != null)
 			findElementsByName(list, e, elementName, recursive);
 		return list;
 	}
-	
+
 	public static List<Element> getElementsByTagname(Element e, Set<String> elementNames, boolean recursive)
 	{
-		List<Element> list = new ArrayList<Element>();
+		List<Element> list = new ArrayList<>();
 		if (e != null)
 			findElementsByName(list, e, elementNames, recursive);
 		return list;
 	}
-	
+
 	public static List<Element> getElementsByTagname(Element e, String[] elementNames, boolean recursive)
 	{
-		Set<String> s = new HashSet<String>();
+		Set<String> s = new HashSet<>();
 		for (String x: elementNames) s.add(x);
-		List<Element> list = new ArrayList<Element>();
+		List<Element> list = new ArrayList<>();
 		if (e != null)
 			findElementsByName(list, e, s, recursive);
 		return list;
 	}
-	
+
 	public static List<Element>  getAllSubelements(Element e, boolean recursive)
 	{
-		List<Element> list = new ArrayList<Element>();
+		List<Element> list = new ArrayList<>();
 		if (e != null)
 			getAllSubelements(list, e, recursive);
 		return list;
@@ -225,7 +204,7 @@ public class XML extends Object
 
 	public static List<Element> getElementsByTagnameAndAttribute(Element e, String elementName, String attName, String attValue, boolean recursive)
 	{
-		List<Element> list = new ArrayList<Element>();
+		List<Element> list = new ArrayList<>();
 		findElementsByNameAndAttribute(list, e, elementName, attName, attValue, recursive);
 		return list;
 	}
@@ -233,50 +212,27 @@ public class XML extends Object
 	public static Element getElementByTagname(Element e, String elementName)
 	{
 		List<Element> list = getElementsByTagname(e, elementName, false);
-		if (list.size() > 0)
-		{
-			return list.get(0);
-		} else
-		{
-			return null;
-		}
+		return !list.isEmpty() ? list.get(0) : null;
 	}
 
 	public static String getElementContent(Element e, String tagname)
 	{
 		Element x = getElementByTagname(e,tagname);
-		if (x != null)   
-		{
-			return x.getTextContent();
-		} else
-		{
-			return null;
-		}
+		return x != null ? x.getTextContent() : null;
 	}
-
-	public XML()
-	{
-		try
-		{
-			stdOutput = new PrintStream(System.out,true, "UTF8");
-		} catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-	}
-
 
 	public static Element findFirstChild(Element e, String tagName)
 	{
 		NodeList l = e.getChildNodes();
 		for (int i=0; i < l.getLength(); i++)
 		{
-			try 
-			{ 
+			try
+			{
 				Element c = (Element) l.item(i);
 				if (c.getNodeName().equals(tagName)) return c;
 			} catch (Exception ex)
 			{
+				ex.printStackTrace();
 			}
 		}
 		return null;
@@ -294,6 +250,7 @@ public class XML extends Object
 					if (c.getNodeName().equals(tagName)) return c;
 			} catch (Exception ex)
 			{
+				ex.printStackTrace();
 			}
 		}
 		return null;
@@ -302,7 +259,7 @@ public class XML extends Object
 	public static List<Element> findChildren(Element e, String[] tagNames)
 	{
 		NodeList l = e.getChildNodes();
-		ArrayList<Element> r = new ArrayList<Element>();
+		ArrayList<Element> r = new ArrayList<>();
 		for (int i=0; i < l.getLength(); i++)
 		{
 			try
@@ -312,27 +269,12 @@ public class XML extends Object
 					if (c.getNodeName().equals(tagName)) r.add(c);
 			} catch (Exception ex)
 			{
+				ex.printStackTrace();
 			}
 		}
 		return r;
 	}
 
-
-	public static List<Element> childrenWithTagname(Element e, String tagName)
-	{
-		NodeList l = e.getChildNodes();
-		ArrayList<Element> r = new ArrayList<Element>();
-		for (int i=0; i < l.getLength(); i++)
-		{
-			if (l.item(i).getNodeType() == Node.ELEMENT_NODE)
-			{
-				Element c = (Element) l.item(i);
-				if (c.getNodeName().contains(tagName))
-					r.add(c);
-			} 
-		}
-		return r;
-	}
 
 	public static void insertChildAfter(Node n, Node after, Node newChild)
 	{
@@ -351,8 +293,8 @@ public class XML extends Object
 				n.insertBefore(newChild, afterAfter);
 			} catch (Exception e)
 			{
-				System.err.println(n + ""  + 
-						afterAfter + "" +  
+				System.err.println(n + ""  +
+						afterAfter + "" +
 						afterAfter.getParentNode() + "" + newChild);
 				e.printStackTrace();
 				System.exit(1);
@@ -363,37 +305,14 @@ public class XML extends Object
 	public static boolean isWhiteSpaceNode(Node n)
 	{
 		String v = n.getNodeValue();
-		if (v.matches("^\\s*$"))
-		{
-			return true;
-		}
-		return false;
+		return v.matches("^\\s*$");
 	}
 
 	public static boolean isWhiteSpaceOrPunctuationNode(Node n)
 	{
 		String v = n.getNodeValue();
-		if (v.matches("^(\\s|;|\\.)*$"))
-		{
-			return true;
-		}
-		return false;
+		return v.matches("^(\\s|;|\\.)*$");
 	}
-	//parser.setFeature( "http://apache.org/xml/features/dom/defer-node-expansion", false );
-
-	/*
-	 * 	private boolean hasNoWordsAfter(Node startNode, Element e2) 
-	{
-		List<Element> words = tei.TEITagClasses.getTokenElements((Element) startNode);
-		if (words.size() == 0)
-			return true;
-		Element w0 = words.get(words.size()-1);
-		short comp = e2.compareDocumentPosition(w0);
-		if (comp == Node.DOCUMENT_POSITION_FOLLOWING)
-			return false;
-		return true;
-	}
-	 */
 
 	public static void collectNodesBetween(List<Node> nodes, Node currentNode, Node after, Node before)
 	{
@@ -407,44 +326,44 @@ public class XML extends Object
 			Node c = children.item(k);
 			Node next = c.getNextSibling();
 			Node previous = c.getPreviousSibling();
-			boolean x1 = 
-					next != null && 
+			boolean x1 =
+					next != null &&
 					after.compareDocumentPosition(next) == Node.DOCUMENT_POSITION_PRECEDING;
 			boolean x2 = previous != null &&
 					before.compareDocumentPosition(previous) == Node.DOCUMENT_POSITION_FOLLOWING;
 			if (!x1 && !x2)
 				collectNodesBetween(nodes,c,after,before);
 		}
-		// klaus 4 oct .... 3 wednesday // 5 mother birthday  
+		// klaus 4 oct .... 3 wednesday // 5 mother birthday
 	}
-	
+
 	public static List<Node> collectNodesBetween(Node after, Node before)
 	{
-		 List<Node> list = new ArrayList<Node>();
+		 List<Node> list = new ArrayList<>();
 		 Node p = findCommonAncestor(after,before);
 		 collectNodesBetween(list,p,after,before);
 		 return list;
 	}
-	
+
 	public static List<Element> collectNodesBetween(Set<String> elementNames, Node after, Node before)
 	{
 		List<Node> list = collectNodesBetween(after,before);
-		List<Element> trimmed = new ArrayList<Element>();
+		List<Element> trimmed = new ArrayList<>();
 		for (Node n: list)
 		{
 			if (n.getNodeType() == Node.ELEMENT_NODE)
 			{
-				if (elementNames.contains(n.getNodeName()) || 
+				if (elementNames.contains(n.getNodeName()) ||
 						elementNames.contains(n.getLocalName()))
 				{
-					trimmed.add((Element) n);		
+					trimmed.add((Element) n);
 				}
 			}
 		}
 		return trimmed;
 	}
-	
-	public static Document parse(String aFilename, boolean namespaceAware) throws 
+
+	public static Document parse(String aFilename, boolean namespaceAware) throws
 		ParserConfigurationException, SAXException, IOException
 	{
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -452,24 +371,16 @@ public class XML extends Object
 		factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 		factory.setFeature( "http://apache.org/xml/features/dom/defer-node-expansion", false );
 		DocumentBuilder builder = factory.newDocumentBuilder();
-		//URI u = new File(aFilename).toURI();
+
 		//There is a bug related to 4 byte UTF8 ... which has to be worked around
 		// https://issues.apache.org/jira/browse/XERCESJ-1257
-		BufferedInputStream fis;
-		if (aFilename.toLowerCase().endsWith(".gz"))
-		{
-			fis = new BufferedInputStream(new GZIPInputStream(new FileInputStream(new File(aFilename))));
-		} else
-			fis = new BufferedInputStream(new FileInputStream(new File(aFilename)));
-		BOMInputStream bommie = new BOMInputStream(fis);
-	    InputStreamReader isr = new java.io.InputStreamReader(bommie, "UTF-8");
+		BufferedInputStream fis = new BufferedInputStream(new FileInputStream(new File(aFilename)));
+	    InputStreamReader isr = new java.io.InputStreamReader(fis, "UTF-8");
 	    InputSource is = new InputSource(isr);
-		Document document = builder.parse(is);
-		//Document document = builder.parse(fis);
-		
-		return document;
+
+	    return builder.parse(is);
 	}
-	
+
 	public static Document parse(String aFilename) throws ParserConfigurationException, SAXException, IOException
 	{
 		return parse(aFilename,true);
@@ -485,15 +396,14 @@ public class XML extends Object
 			DocumentBuilder builder = factory.newDocumentBuilder();
 			byte[] bytes = inputString.getBytes("UTF-8");
 			InputStream input = new ByteArrayInputStream(bytes);
-			Document document = builder.parse(input);
-			return document;
+			return builder.parse(input);
 		} catch (Exception e)
 		{
 			e.printStackTrace();
+			return null;
 		}
-		return null;
 	}
-	
+
 	public static Document parseStream(InputStream inputStream, boolean namespaceAware)
 	{
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -503,25 +413,24 @@ public class XML extends Object
 			factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 			factory.setFeature( "http://apache.org/xml/features/dom/defer-node-expansion", false );
 			DocumentBuilder builder = factory.newDocumentBuilder();
-			
-			Document document = builder.parse(inputStream);
-			return document;
+
+			return builder.parse(inputStream);
 		} catch (Exception e)
 		{
 			e.printStackTrace();
+			return null;
 		}
-		return null;
 	}
 	public static Document parseString(String inputString)
 	{
 		return parseString(inputString, true);
 	}
-	
+
 	public static Document createDocument(String rootElementName)
 	{
 		try
 		{
-			DocumentBuilderFactory builderFactory = 
+			DocumentBuilderFactory builderFactory =
 					DocumentBuilderFactory.newInstance();
 			builderFactory.setNamespaceAware(true);
 			DocumentBuilder builder = builderFactory.newDocumentBuilder();
@@ -534,28 +443,6 @@ public class XML extends Object
 		{
 			return null;
 		}
-	}
-	public void parseList(String listfile) throws FileNotFoundException, IOException, 
-	ParserConfigurationException, SAXException
-	{
-		BufferedReader reader = new BufferedReader(new FileReader(listfile));
-		List<String> filenames = new ArrayList<String>();
-		String filename;
-		while ((filename = reader.readLine()) != null)
-		{
-			filenames.add(filename);
-		}
-		for (int i = 0; i < filenames.size(); i++)
-		{
-			String f = filenames.get(i);
-			System.err.println(i + ":" + f);
-			if (!f.startsWith("#"))
-			{
-				//System.out.println("File " + (i + 1) + " van " + filenames.size());
-				XML.parse(f);
-			}
-		}
-		reader.close();
 	}
 
 	public static String documentToString(Document d)
@@ -585,7 +472,7 @@ public class XML extends Object
 		return null;
 	}
 
-	public void printNode(Node node)
+	public void printNode(Node node, Writer writer)
 	{
 		try
 		{
@@ -597,21 +484,15 @@ public class XML extends Object
 			trans.setOutputProperty(OutputKeys.METHOD, "xml");
 			// Print the DOM node
 
-			StringWriter sw = new StringWriter();
-			StreamResult result = new StreamResult(sw);
-			DOMSource source = new DOMSource(node);
-			trans.transform(source, result);
-			String xmlString = sw.toString();
-
-			stdOutput.println(xmlString);
+			trans.transform(new DOMSource(node), new StreamResult(writer));
 		}
 		catch (TransformerException e)
 		{
 			e.printStackTrace();
 		}
 	}
-	
-	public static String NodeToString(Node node)
+
+	public static String nodeToString(Node node)
 	{
 		try
 		{
@@ -629,7 +510,6 @@ public class XML extends Object
 			trans.transform(source, result);
 			String xmlString = sw.toString();
 			return xmlString;
-			
 		}
 		catch (TransformerException e)
 		{
@@ -637,7 +517,7 @@ public class XML extends Object
 			return null;
 		}
 	}
-	
+
 	public static Document cloneDocument(Document d)
 	{
 		try
@@ -653,18 +533,6 @@ public class XML extends Object
 			e.printStackTrace();
 			return null;
 		}
-	}
-
-	public static void main(String[] args)
-	throws IOException, ParserConfigurationException, SAXException
-	{
-		if (args.length != 1)
-		{
-			System.out.println("Gebruikswijze: <programmanaam> <lijstnaam>");
-			return;
-		}
-		
-		XML.parse(args[0]);
 	}
 
 	private static void getTextNodesBelow(List<Node> nodes, Node n)
@@ -684,17 +552,16 @@ public class XML extends Object
 		}
 	}
 
-	public static List<Node> getTextNodesBelow(Node n) 
+	public static List<Node> getTextNodesBelow(Node n)
 	{
-		// TODO Auto-generated method stub
-		List<Node> l = new ArrayList<Node>();
+		List<Node> l = new ArrayList<>();
 		getTextNodesBelow(l,n);
 		return l;
 	}
 
-	public static Element findAncestor(Node t, String string) 
+	public static Element findAncestor(Node t, String string)
 	{
-		Node p = t;
+		Node p;
 		for (p=t; p != null; p =p.getParentNode())
 		{
 			if (p.getNodeType() ==Node.ELEMENT_NODE && p.getNodeName().equals(string))
@@ -702,11 +569,11 @@ public class XML extends Object
 		}
 		return null;
 	}
-	
+
 	public static Set<Node> getAncestors(Node n)
 	{
 		Node p = n.getParentNode();
-		Set<Node> ancestors = new HashSet<Node>();
+		Set<Node> ancestors = new HashSet<>();
 		while (p != null)
 		{
 			ancestors.add(p );
@@ -714,7 +581,7 @@ public class XML extends Object
 		}
 		return ancestors;
 	}
-	
+
 	public static Node findCommonAncestor(Node n1, Node n2)
 	{
 		Set<Node> a1 = getAncestors(n1);
@@ -726,28 +593,13 @@ public class XML extends Object
 		}
 		return null;
 	}
-	
-	public static BufferedReader openBufferedTextFile(String fileName)
-	{
-		try
-		{
-			BufferedReader b = 
-				new BufferedReader(new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
-			return b;
-		} catch (Exception e)
-		{
-			e.printStackTrace();
-			return null;
-		}
-	}
 
 	/**
 	 * Replace the subtree under e with a single text node
 	 * @param e
 	 */
-	public static void flattenElementContents(Element e) 
+	public static void flattenElementContents(Element e)
 	{
-		// TODO Auto-generated method stub
 		Document d = e.getOwnerDocument();
 		Text t = d.createTextNode(e.getTextContent());
 		NodeList ch = e.getChildNodes();
@@ -757,12 +609,12 @@ public class XML extends Object
 		}
 		e.appendChild(t);
 	}
-	
+
 	public static void removeInterveningNode(Element e)
 	{
 		Node p = e.getParentNode();
 		NodeList n = e.getChildNodes();
-		List<Node> children = new ArrayList<Node>();
+		List<Node> children = new ArrayList<>();
 		Node next = e.getNextSibling();
 		for (int i=0; i < n.getLength(); i++)
 		{
@@ -772,10 +624,28 @@ public class XML extends Object
 		p.removeChild(e);
 		for (Node c: children)
 		{
-			if (next != null) 
+			if (next != null)
 				p.insertBefore(c, next);
 			else
 				p.appendChild(c);
 		}
+	}
+
+	public static String escapeForAttribute(String v)
+	{
+		v = v.replaceAll("&", "&amp;");
+		v = v.replaceAll("<", "&lt;");
+		v = v.replaceAll(">", "&gt;");
+		v = v.replaceAll("'", "&apos;");
+		v = v.replaceAll("\"", "&quot;");
+		return v;
+	}
+
+	public static String escapeCharacterData(String v)
+	{
+		v = v.replaceAll("&", "&amp;");
+		v = v.replaceAll("<", "&lt;");
+		v = v.replaceAll(">", "&gt;");
+		return v;
 	}
 }

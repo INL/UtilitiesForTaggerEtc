@@ -1,32 +1,28 @@
 package org.ivdnt.util;
-import java.io.*;
-
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class Resource
 
-{
-
-	/** Creates a new instance of Resource **/
-	
-	public static String resourceFolder = "resources";
-	public static String yetAnotherFolder = 
+{	public static String resourceFolder = "resources";
+	public static String yetAnotherFolder =
 			"N:/Impact/ImpactIR/OCRIRevaluatie/IREval/workspace/ImpactIR/resources";
-	
+
 	static String[] foldersToTry = {resourceFolder, yetAnotherFolder};
-	
-	public Resource()
-	{
 
-	}
+	private Resource() {}
 
-	public  InputStream openStream(String s)
+	// TODO better name
+	public static InputStream openStream(String s)
 	{
-		try 
+		try
 		{
 			// first try to read file from local file system
 			for (String f: foldersToTry)
 			{
-				File file = new File(f + "/"+ s);
+				File file = new File(f, s);
 				if (file.exists())
 				{
 					return new FileInputStream(file);
@@ -35,67 +31,27 @@ public class Resource
 			// next try for files included in jar
 			try
 			{
-				InputStream is = 
-						this.getClass().getResourceAsStream("/"+ s);  
+				InputStream is = Resource.class.getClass().getResourceAsStream("/"+ s);
 				if (is != null)
 				{
-					//org.ivdnt.openconvert.log.ConverterLog.defaultLog.println("found in jar!!");
+					System.err.println("found in jar!!");
 					return is;
 				}
 			} catch (Exception e)
 			{
 				e.printStackTrace();
-			} 
-			// ClassLoader loader = getClass().getClassLoader();
-			//Enumeration<java.net.URL> urls = loader.getResources(arg0);
-			java.net.URL url = getClass().getClassLoader().getResource(resourceFolder + "/" + s);
-			//org.ivdnt.openconvert.log.ConverterLog.defaultLog.println("jar url " + url);
+			}
+
+			java.net.URL url = Resource.class.getResource(resourceFolder + "/" + s);
+			System.err.println("jar url " + url);
 			// or URL from web
 			if (url == null) url = new java.net.URL(s);
 			java.net.URLConnection site = url.openConnection();
-			InputStream is = site.getInputStream();
-			return is;
+			return site.getInputStream();
 		} catch (IOException ioe)
 		{
-			//org.ivdnt.openconvert.log.ConverterLog.defaultLog.println("Could not open " + s);
+			System.err.println("Could not open " + s);
 			return null;
 		}
-	}
-	
-	public Reader openFile(String s)
-	{
-		InputStream is = openStream(s);
-		if (is != null)
-			return new InputStreamReader(is);
-		return null;
-	}
-	public static Reader openResourceFile(String s)
-	{
-		return new  Resource().openFile(s);
-	}
-	
-	public  static InputStream openResourceStream(String s)
-	{
-		return new Resource().openStream(s);
-	}
-	
-	public static String getStringFromFile(String fileName)
-	{
-		String r="";
-		
-		try
-		{
-			BufferedReader reader = new BufferedReader((new Resource()).openFile(fileName));
-			String s;
-		
-			while ((s = reader.readLine()) != null)
-			{
-				r += s + "\n";
-			}
-		} catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-		return r;
 	}
 }

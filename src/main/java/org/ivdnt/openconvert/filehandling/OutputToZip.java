@@ -1,24 +1,24 @@
 package org.ivdnt.openconvert.filehandling;
 
+import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-public class OutputToZip implements SimpleInputOutputProcess
+public class OutputToZip implements FileInputOutputProcess, Closeable
 {
-	SimpleInputOutputProcess base;
+	FileInputOutputProcess base;
 	String archiveName;
 	ZipOutputStream zipOutputStream = null;
 
-	public OutputToZip(String archiveName, SimpleInputOutputProcess siop)
+	public OutputToZip(String archiveName, FileInputOutputProcess fiop)
 	{
-		this.base = siop;
+		this.base = fiop;
 		this.archiveName = archiveName;
 		try
 		{
@@ -29,6 +29,7 @@ public class OutputToZip implements SimpleInputOutputProcess
 		}
 	}
 
+	@Override
 	public void close()
 	{
 		try
@@ -39,17 +40,19 @@ public class OutputToZip implements SimpleInputOutputProcess
 			e.printStackTrace();
 		}
 	}
-	
+
+	// We must override handleFile here as we shouldn't write to a file, but to an entry in our zip
+	// inFile is still a regular file though
+	@Override
 	public void handleFile(String inFilename, String outFilename)
-	{	
-		try
-		{
+	{
+		try {
 			File tempContent= File.createTempFile("tempOut", ".temp");
 			tempContent.deleteOnExit();
-			
+
 			// this will NOT work when the base handler is asynchronous...
 			// in that case zipping has to wait for the task to finish
-			
+
 			base.handleFile(inFilename, tempContent.getCanonicalPath());
 			FileInputStream fis = new FileInputStream(tempContent);
 			DataInputStream dis = new DataInputStream(fis);
@@ -59,11 +62,6 @@ public class OutputToZip implements SimpleInputOutputProcess
 		{
 			e.printStackTrace();
 		}
-	}
-	
-	public void setProperties(Properties properties)
-	{
-
 	}
 
 	public synchronized void saveToZip(ZipOutputStream zippie, String entryName, DataInputStream in) throws IOException
@@ -81,14 +79,14 @@ public class OutputToZip implements SimpleInputOutputProcess
 			in.close();
 		}
 	}
-	
-	private static int writeData(DataInputStream in, OutputStream fOut) throws IOException 
+
+	private static int writeData(DataInputStream in, OutputStream fOut) throws IOException
 	{
 		byte[] buffer = new byte[1024 * 1024];
 		int bytesRead = 0;
 		int totalBytesRead = 0;
 		while ((bytesRead = in.read(buffer)) != -1)
-		{	
+		{
 			totalBytesRead += bytesRead;
 
 

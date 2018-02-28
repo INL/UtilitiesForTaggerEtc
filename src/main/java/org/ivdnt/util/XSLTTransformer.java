@@ -1,24 +1,18 @@
 package org.ivdnt.util;
 
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -29,8 +23,9 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.ivdnt.openconvert.filehandling.DirectoryHandling;
+import org.ivdnt.openconvert.filehandling.SimpleInputOutputProcess;
+import org.ivdnt.openconvert.filehandling.SimpleProcessException;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 
 /**
@@ -38,25 +33,21 @@ import org.w3c.dom.Element;
  * artikel om in HTML.
  */
 
-public class XSLTTransformer implements org.ivdnt.openconvert.filehandling.SimpleInputOutputProcess
+public class XSLTTransformer extends SimpleInputOutputProcess
 {
-	/** our Transformer object */
 	private Transformer transformer = null;
 	private TransformerFactory tFactory;
 	private String xslInUri = null;
 	private boolean useSaxon = true;
-	private boolean alwaysReload = true;
-	private Properties properties;
 	InputStream xslReader = null;
 	int jobId=0;
-	public static String inputEncoding = "UTF-8";
-	
+
 	private synchronized void nextJob()
 	{
 		jobId++;
 		setParameter("jobNumber","" + jobId);
 	}
-	
+
 	public XSLTTransformer(String xslInUri)
 	{
 		String key = "javax.xml.transform.TransformerFactory";
@@ -94,7 +85,7 @@ public class XSLTTransformer implements org.ivdnt.openconvert.filehandling.Simpl
 		props.put(key, value);
 		System.setProperties(props);
 		tFactory = TransformerFactory.newInstance();
-		
+
 		this.xslReader = xslReader;
 		loadStylesheet();
 		if (this.transformer == null)
@@ -104,39 +95,30 @@ public class XSLTTransformer implements org.ivdnt.openconvert.filehandling.Simpl
 		}
 	}
 
-	private void loadStylesheet() 
+	private void loadStylesheet()
 	{
 		if (xslInUri != null)
 		{
-			try 
+			try
 			{
 				this.transformer = tFactory.newTransformer(new StreamSource(this.xslInUri));
-			} catch (TransformerConfigurationException e) 
+			} catch (TransformerConfigurationException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		} 
+		}
 		if (xslReader != null)
 		{
-			try 
+			try
 			{
 				this.transformer = tFactory.newTransformer(new StreamSource(xslReader));
-			} catch (TransformerConfigurationException e) 
+			} catch (TransformerConfigurationException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 	}
 
-	@Override
-	public void setProperties(Properties properties) 
-	{
-		// TODO Auto-generated method stub
-		this.properties = properties;
-	}
-	
 	public XSLTTransformer(Transformer transformer)
 	{
 		this.transformer = transformer;
@@ -148,139 +130,83 @@ public class XSLTTransformer implements org.ivdnt.openconvert.filehandling.Simpl
 	}
 	/**
 	 * Voert de transformatie uit. De input bestaat uit een String met de XML code.
-	 * 
+	 * @param instring
+	 *
 	 * @param(STring  instring
 	 *            De input string
 	 * @param out
 	 *            java.io.Writer object Het resultaat van het transformeren van de XML code.
-	 * @param licenseAccepted 
 	 * @throws TransformerConfigurationException
 	 * @throws TransformerException
 	 * @throws IOException
 	 */
-	
+
 	public void transformString(String instring, Writer out)
 		throws TransformerConfigurationException, TransformerException, IOException
 	{
 		StreamSource source = new StreamSource(new StringReader(instring));
 		StreamResult result = new StreamResult(out);
-		
+
 		transformer.transform(source, result);
 		out.flush();
 	}
-	
 
-	public void transformFile(String inFileName, OutputStreamWriter out)
-	{
-		try 
-		{
-			BufferedReader br = openBufferedTextFile(inFileName);
-			// OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(outFileName),"UTF-8");
-			StreamSource source = new StreamSource(br);
-			StreamResult result = new StreamResult(out);
-			transformer.transform(source, result);
-			br.close();
-			// out.close();
-		} catch (Exception e) 
-		{
-			e.printStackTrace();
-		}
-	}
-	
 	public Document transformDocument(Document inDocument)
 	{
-		try 
+		try
 		{
 			DOMSource source = new DOMSource(inDocument);
 			DOMResult result = new DOMResult();
 			transformer.transform(source, result);
-			org.w3c.dom.Node resultNode =  result.getNode();
-			DocumentBuilder builder = null;
-			try 
-			{
-				builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-			} catch (ParserConfigurationException ex) {
-				ex.printStackTrace();
-				System.exit(-1);
-			}
-
-
-			
-			//Document doc = builder.newDocument();
-			//doc.appendChild(resultNode);
-			return (Document) resultNode;
-			//System.err.println("RESULT: " + resultNode);
-			//System.err.println(XML.NodeToString(resultNode));
-			//return resultNode.getOwnerDocument();
-		} catch (Exception e) 
-		{
-			e.printStackTrace();
-			return null;
-		}
-	}
-	
-	/*
-	 * Dit gaat niet goed als de input niet utf8 is i$oM0K
-	 */
-	public void transformFile(String inFileName, String outFileName)
-	{
-		try 
-		{
-			nextJob();
-			setParameter("inputFile", inFileName);
-			BufferedReader br = openBufferedTextFile(inFileName);
-			OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(outFileName),"UTF-8");
-			StreamSource source = new StreamSource(br);
-			StreamResult result = new StreamResult(out);
-			transformer.transform(source, result);
-			br.close();
-			out.close();
-		} catch (Exception e) 
-		{
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Releases the transformer object to the free pool, to be reused next time.
-	 * 
-	 */
-	public static BufferedReader openBufferedTextFile(String fileName)
-	{
-		try
-		{
-			BufferedReader b = 
-				new BufferedReader(new InputStreamReader(new FileInputStream(fileName), inputEncoding));
-			return b;
+			return (Document) result.getNode();
 		} catch (Exception e)
 		{
 			e.printStackTrace();
 			return null;
 		}
 	}
-	public void release()
+
+	/*
+	 * Dit gaat niet goed als de input niet utf8 is
+	 */
+	public void transformFile(String inFileName, String outFileName)
 	{
+		try {
+			handleFile(inFileName, outFileName);
+		} catch (SimpleProcessException e) {
+			e.printStackTrace();
+		}
 	}
 
+	public void transformStream(Reader reader, Writer writer) {
+		try {
+			nextJob();
+			transformer.transform(new StreamSource(reader), new StreamResult(writer));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	@Override
-	public void handleFile(String inFile, String outFile) 
-	{
-		// TODO Auto-generated method stub
-		transformFile(inFile,outFile);
+	public void handleStream(InputStream is, Charset ics, OutputStream os) throws SimpleProcessException, IOException {
+		if (ics == null)
+			ics = StandardCharsets.UTF_8;
+
+		try (
+			Reader reader = new InputStreamReader(is, ics);
+			Writer writer = new OutputStreamWriter(os, ics);
+		) {
+			transformStream(reader, writer);
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
-	
+
 	public static void main(String[] args)
 	{
 		XSLTTransformer p = new XSLTTransformer(args[0]);
 		DirectoryHandling.tagAllFilesInDirectory(p, args[1], args[2]);
-	}
-
-	@Override
-	public void close()
-	{
-		// TODO Auto-generated method stub
-		
 	}
 }
 

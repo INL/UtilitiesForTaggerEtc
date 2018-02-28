@@ -4,40 +4,39 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
 
 public class WrappedFileBasedConverter implements StreamInputOutputProcess
 {
-    SimpleInputOutputProcess base = null;
+    FileInputOutputProcess base = null;
 
-	
-	public WrappedFileBasedConverter(SimpleInputOutputProcess s)
+
+	public WrappedFileBasedConverter(FileInputOutputProcess s)
 	{
 		this.base = s;
 	}
-	
-	//@Override
-	public void handleFile(InputStream inStream, OutputStream outStream)  throws ConversionException
+
+	@Override
+	public void handleStream(InputStream inStream, Charset ics, OutputStream outStream)  throws SimpleProcessException
 	{
-		// TODO Auto-generated method stub
 		try
 		{
 			File fin = File.createTempFile("bla", "in");
 			File fout = File.createTempFile("bla", "out");
-			
+
 			fin.deleteOnExit();
 			fout.deleteOnExit();
 			fin.delete();
 			fout.delete();
-			
+
 			Path pin = fin.toPath();
 			Path pout = fout.toPath();
-			
+
 			Files.copy(inStream, pin);
 			base.handleFile(fin.getCanonicalPath(), fout.getAbsolutePath());
-			
+
 			Files.copy(pout, outStream); // ahem?
 			outStream.close();
 			//outStream.flush();
@@ -48,15 +47,7 @@ public class WrappedFileBasedConverter implements StreamInputOutputProcess
 			fout.delete();
 		} catch (IOException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-
-	//@Override
-	public void setProperties(Properties properties)  throws ConversionException
-	{
-		// TODO Auto-generated method stub
-		base.setProperties(properties);
 	}
 }

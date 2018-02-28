@@ -7,10 +7,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
-public class TabSeparatedFile 
+public class TabSeparatedFile
 {
 	BufferedReader b =null;
 	public String[] fieldNames;
@@ -24,7 +27,7 @@ public class TabSeparatedFile
 	{
 		init(fileName, fields);
 	}
-	
+
 	public TabSeparatedFile(BufferedReader b, String[] fields)
 	{
 		this.b = b;
@@ -32,7 +35,7 @@ public class TabSeparatedFile
 		for (int i=0; i < fieldNames.length; i++)
 			fieldNumbers.put(fieldNames[i],i);
 	}
-	
+
 	public void init(InputStream s, String[] fields)
 	{
 		try {
@@ -45,21 +48,21 @@ public class TabSeparatedFile
 		for (int i=0; i < fieldNames.length; i++)
 			fieldNumbers.put(fieldNames[i],i);
 	}
-	
+
 	public TabSeparatedFile(String fileName, String[] fields, boolean fromJar)
 	{
 		if (!fromJar)
 			init(fileName, fields);
 		else
 		{
-			InputStream s = Resource.openResourceStream(fileName);
+			InputStream s = Resource.openStream(fileName);
 			init(s,fields);
 		}
 	}
-	
+
 	public void init(String fileName, String[] fields)
 	{
-		
+
 		{
 			try {
 				b = new BufferedReader(new FileReader(fileName));
@@ -101,7 +104,7 @@ public class TabSeparatedFile
 	}
 
 	public String[] getLine()
-	{	
+	{
 		String s;
 		try {
 			if  (( (s = b.readLine()) != null))
@@ -109,7 +112,7 @@ public class TabSeparatedFile
 				currentRow = s.split(separator);
 				return currentRow;
 			}
-		} catch (IOException e) 
+		} catch (IOException e)
 		{
 
 			e.printStackTrace();
@@ -149,7 +152,7 @@ public class TabSeparatedFile
 		}
 		return null;
 	}
-	
+
 	public List<String> getColumn(String colName) throws IOException
 	{
 		List<String> r = new ArrayList<String>();

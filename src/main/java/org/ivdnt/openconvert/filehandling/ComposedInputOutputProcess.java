@@ -1,19 +1,26 @@
 package org.ivdnt.openconvert.filehandling;
 
-import java.util.*;
-import java.io.*; 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 
-public class ComposedInputOutputProcess implements SimpleInputOutputProcess
+public class ComposedInputOutputProcess extends SimpleInputOutputProcess
 {
-	List<SimpleInputOutputProcess> steps = new ArrayList<SimpleInputOutputProcess>();
+	List<StreamInputOutputProcess> steps = new ArrayList<>();
 	public ComposedInputOutputProcess(SimpleInputOutputProcess s1, SimpleInputOutputProcess s2)
 	{
 		steps.add(s1);
 		steps.add(s2);
 	}
-	
-	public List<SimpleInputOutputProcess> getSteps()
+
+	public List<StreamInputOutputProcess> getSteps()
 	{
 		return steps;
 	}
@@ -21,47 +28,25 @@ public class ComposedInputOutputProcess implements SimpleInputOutputProcess
 	{
 		steps.addAll(l);
 	}
-	
-	//@Override
-	public void handleFile(String inFilename, String outFilename) throws ConversionException
-	{
-		// TODO Auto-generated method stub
-		File previousOut = null;
-		for (int i =0; i < steps.size(); i++)
-		{
-			SimpleInputOutputProcess step = steps.get(i);
-			String in = i==0?inFilename:previousOut.getPath();
-			String out = null;
-			File x = null;
-			if (i==steps.size()-1)
-				out = outFilename;
-			else
-			{
-				try
-				{
-					x = File.createTempFile("step.", "tmp");
-					out = x.getPath();
-					x.delete(); // this is ugly and wrong
-				} catch (Exception e)
-				{
-					e.printStackTrace();
-				}
+
+	@Override
+	public void handleStream(InputStream is, Charset ics, OutputStream os) throws IOException, SimpleProcessException {
+		try {
+			ByteArrayOutputStream _os = new ByteArrayOutputStream(); // can be reused between steps, close() is no-op
+
+			for(int i = 0; i < steps.size(); ++i) {
+				InputStream stepInput = i == 0 ? is : new ByteArrayInputStream(_os.toByteArray()); // use original input on first step
+				OutputStream stepOutput = i == steps.size() -1 ? os : _os; // use original output on last step
+				_os.reset();
+
+				StreamInputOutputProcess proc = steps.get(i);
+				proc.handleStream(stepInput, ics, stepOutput);
 			}
-			step.handleFile(in, out);
-			previousOut = x;
 		}
-	}
-
-	//@Override
-	public void setProperties(Properties properties) {
-		// TODO Auto-generated method stub
-
-	}
-
-	//@Override
-	public void close()
-	{
-		// TODO Auto-generated method stub
-		
+		finally {
+			// TODO should be handled by calling code
+			IOUtils.closeQuietly(is);
+			IOUtils.closeQuietly(os);
+		}
 	}
 }

@@ -3,10 +3,7 @@ package org.ivdnt.openconvert.filehandling;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
-import java.io.IOException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -16,17 +13,15 @@ import java.util.Arrays;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.ivdnt.util.XML;
 import org.ivdnt.util.XSLTTransformer;
-import org.w3c.dom.Document;
 
-
-public class DirectoryHandling 
+// TODO compare with PathHandling and PathHandlingNoOutput and see which of them can go
+public class DirectoryHandling
 {
-	static public FileFilter ff = null;
-	public  static boolean usePathHandler = true;;
+	public static FileFilter ff = null;
+	public static boolean usePathHandler = true;
 
-	public static void tagAllFilesInDirectory(SimpleInputOutputProcess p, 
+	public static void tagAllFilesInDirectory(FileInputOutputProcess p,
 			String folderName, String outFolderName, boolean makeSubdirs)
 	{
 		if (makeSubdirs)
@@ -55,18 +50,18 @@ public class DirectoryHandling
 
 	static class Wrapper implements DoSomethingWithFile
 	{
-		SimpleInputOutputProcess p;
+		FileInputOutputProcess p;
 		String destinationFolder;
 
-		public Wrapper(SimpleInputOutputProcess p, String destinationFolder)
+		public Wrapper(FileInputOutputProcess p, String destinationFolder)
 		{
 			this.p = p;
 			this.destinationFolder = destinationFolder;
 		}
-		//@Override
-		public void handleFile(String fileName) throws ConversionException
+
+		@Override
+		public void handleFile(String fileName) throws SimpleProcessException
 		{
-			// TODO Auto-generated method stub
 			File f = new File(fileName);
 			String n = f.getName();
 			p.handleFile(fileName, destinationFolder + "/" + n);
@@ -75,52 +70,45 @@ public class DirectoryHandling
 
 	public static void handleZip(String filename, DoSomethingWithFile  siop)
 	{
-		try
-		{
-			String tempDir = org.ivdnt.util.IO.getTempDir();
-
+		try (
+			FileInputStream fis = new FileInputStream(filename);
+			ZipInputStream zipInputStream = new ZipInputStream(fis)
+		) {
 			File unzipTo = File.createTempFile("unzip.", ".dir");
 
 			unzipTo.delete();
 			unzipTo.mkdir();
 			String destinationFolder = unzipTo.getPath();
 			byte[] buf = new byte[1024];
-			ZipInputStream zipInputStream = null;
 			ZipEntry zipentry;
-			zipInputStream = new ZipInputStream(new FileInputStream(filename));
 
 			zipentry = zipInputStream.getNextEntry();
-			while (zipentry != null) 
-			{ 
+			while (zipentry != null)
+			{
 				//for each entry to be extracted
 				String entryName = zipentry.getName();
 				System.out.println("entryname "+entryName);
 
 				int n; FileOutputStream fileOutputStream;
 				String f = destinationFolder + "/" + entryName;
-				if (zipentry.isDirectory())
-				{
-
-				} else
+				if (!zipentry.isDirectory())
 				{
 					createPath(f);
-					fileOutputStream = new FileOutputStream(destinationFolder + "/" + entryName);             
+					fileOutputStream = new FileOutputStream(destinationFolder + "/" + entryName);
 
 					while ((n = zipInputStream.read(buf, 0, 1024)) > -1)
 						fileOutputStream.write(buf, 0, n);
 
-					fileOutputStream.close(); 
+					fileOutputStream.close();
 				}
 				zipInputStream.closeEntry();
-				// bad test on extension: should parse content.opf to get media type for each entry!
 				// again problems with multithreading ... cannot delete here
 				siop.handleFile(f);
 				File ff = new File(f);
 				ff.delete(); ff.deleteOnExit();
 				zipentry = zipInputStream.getNextEntry();
-			}//while
+			}
 
-			zipInputStream.close();
 			unzipTo.delete();
 			unzipTo.deleteOnExit();
 		}
@@ -130,12 +118,12 @@ public class DirectoryHandling
 		}
 	}
 
-	public static void tagAllFilesInDirectory(SimpleInputOutputProcess p, 
+	public static void tagAllFilesInDirectory(FileInputOutputProcess p,
 			String folderName, String outFolderName)
 	{
 		if (usePathHandler )
 		{
-			traverseDirectory(p,folderName,outFolderName, null);
+			traverseDirectory(p,folderName,outFolderName);
 			return;
 		}
 		OutputToZip otz = null;
@@ -149,9 +137,8 @@ public class DirectoryHandling
 
 		if (!f.exists())
 		{
-			try 
+			try
 			{
-				URL u = new URL(folderName);
 				File downloaded = DirectoryHandling.downloadURL(folderName);
 				if (downloaded != null)
 				{
@@ -169,7 +156,6 @@ public class DirectoryHandling
 
 		if (f.isFile())
 		{
-			String base = f.getName();
 			if (folderName.toLowerCase().endsWith(".zip")) // ahem just a test
 			{
 				DoSomethingWithFile dswf = new Wrapper(p, outFolderName);
@@ -180,11 +166,10 @@ public class DirectoryHandling
 
 				if (!outFile.isDirectory())
 				{
-					try 
+					try
 					{
 						p.handleFile(f.getCanonicalPath(), outFolderName);
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -194,23 +179,21 @@ public class DirectoryHandling
 		if (f.isDirectory())
 		{
 			File[] entries = f.listFiles();
-			Arrays.sort(entries);
 			for (File x: entries)
 			{
 				String base = x.getName();
 				System.err.println(base);
 				if (x.isFile())
 				{
-					try 
+					try
 					{
 						File outFile = new File( outFolderName + "/" + base);
 						if (!outFile.exists())
 						{
 							p.handleFile(x.getCanonicalPath(), outFolderName + "/" + base);
 						}
-					} catch (Exception e) 
+					} catch (Exception e)
 					{
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				} else
@@ -231,9 +214,13 @@ public class DirectoryHandling
 
 	/**
 	 * Difference with previous: this creates subdirectories mirroring the source directory
+	 * @param p
+	 * @param currentDirectory
+	 * @param outputDirectory
+	 * @param fileFilter
 	 */
-	public static void traverseDirectory(SimpleInputOutputProcess p, File currentDirectory, 
-			File outputDirectory, FileFilter fileFilter) 
+	public static void traverseDirectory(FileInputOutputProcess p, File currentDirectory,
+			File outputDirectory, FileFilter fileFilter)
 	{
 		if (usePathHandler)
 		{
@@ -241,6 +228,7 @@ public class DirectoryHandling
 			{
 				Path pin = Paths.get(currentDirectory.getCanonicalPath());
 				Path pout = Paths.get(outputDirectory.getCanonicalPath());
+				// TODO cannot be correct: essential file name information is lost
 				StreamInputOutputProcess s = new WrappedFileBasedConverter(p);
 				PathHandling.traverseDirectory(s, pin, pout, fileFilter);
 			} catch (Exception e)
@@ -256,44 +244,40 @@ public class DirectoryHandling
 				p.handleFile(currentDirectory.getCanonicalPath(),outputDirectory.getCanonicalPath()) ;
 			} catch (Exception e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			return;
 		}
-		File selectedFiles[];
+		File[] selectedFiles;
 		if (currentDirectory.isFile())
 		{
 			selectedFiles = new File[1];
 			selectedFiles[0]  = currentDirectory;
 		}
 		else
-                {
 			selectedFiles = currentDirectory.listFiles(fileFilter); // what if null?
-                        Arrays.sort(selectedFiles);
-                }
-		if (selectedFiles != null) 
+		if (selectedFiles != null)
 		{
 			Arrays.sort(selectedFiles);
-			for (File f : selectedFiles) 
+			for (File f : selectedFiles)
 			{
-				if (f.isDirectory()) 
+				if (f.isDirectory())
 				{
 					System.out.println(f.getPath());
 					File outputSubdirectory = new File(outputDirectory, f.getName());
 					outputSubdirectory.mkdirs();
-					traverseDirectory(p, new File(currentDirectory, f.getName()), 
+					traverseDirectory(p, new File(currentDirectory, f.getName()),
 							outputSubdirectory, fileFilter);
-				} else 
+				} else
 				{
-					try 
+					try
 					{
 						File outFile = new File( outputDirectory.getPath() + "/" + f.getName());
 						if (!outFile.exists())
 						{
 							p.handleFile(f.getCanonicalPath(), outFile.getPath());
 						}
-					} catch (Exception ex) 
+					} catch (Exception ex)
 					{
 						System.err.println("Probleem met bestand " + f.getPath() + ": " + ex.toString());
 					}
@@ -302,16 +286,15 @@ public class DirectoryHandling
 		}
 	}
 
-	public static void traverseDirectory(SimpleInputOutputProcess p, String folderName, 
-			String outputDirectory, FileFilter fileFilter) 
+	public static void traverseDirectory(FileInputOutputProcess p, String folderName,
+			String outputDirectory)
 	{
 		File f = new File(folderName);
 
 		if (!f.exists())
 		{
-			try 
+			try
 			{
-				URL u = new URL(folderName);
 				File downloaded = DirectoryHandling.downloadURL(folderName);
 				if (downloaded != null)
 				{
@@ -333,15 +316,13 @@ public class DirectoryHandling
 				handleZip(folderName, dswf);
 			} else
 			{
-				String base = f.getName();
 				File outFile = new File(outputDirectory);
 				if (!outFile.isDirectory())
 				{
-					try 
+					try
 					{
 						p.handleFile(f.getCanonicalPath(), outputDirectory);
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -357,15 +338,11 @@ public class DirectoryHandling
 		File f = new File(folderName);
 		if (f.isFile())
 		{
-			String base = f.getName();
-
-
-			try 
+			try
 			{
 				action.handleFile(f.getCanonicalPath());
-			} catch (Exception e) 
+			} catch (Exception e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -373,21 +350,17 @@ public class DirectoryHandling
 		if (f.isDirectory())
 		{
 			File[] entries = f.listFiles();
-			Arrays.sort(entries);
 			for (File x: entries)
 			{
-				String base = x.getName();
-				// System.err.println(base);
 				if (x.isFile())
 				{
 					String entryName;
-					try 
+					try
 					{
 						entryName = x.getCanonicalPath();
 						action.handleFile(entryName);
-					} catch (Exception e) 
+					} catch (Exception e)
 					{
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				} else
@@ -401,30 +374,24 @@ public class DirectoryHandling
 					}
 				}
 			}
-			//System.err.println("tokens: " + nTokens);	
-		}	
+		}
 	}
 
 	private static File downloadURL(String url)
 	{
-		try 
+		try
 		{
 			URL website = new URL(url);
 			ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-			File savedURLContent = File.createTempFile("dowwload", ".temp");
-			try
-			{
-				if (true) savedURLContent.deleteOnExit();
-			} catch (Exception e)
-			{
-				e.printStackTrace();
+			File savedURLContent = File.createTempFile("download", ".temp");
+
+			try (FileOutputStream fos = new FileOutputStream(savedURLContent)) {
+				fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
 			}
-			FileOutputStream fos = new FileOutputStream(savedURLContent);
-			fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
 			return savedURLContent;
-		} catch (Exception e) 
+		} catch (Exception e)
 		{
-			// TODO: handle exception
+			e.printStackTrace();
 		}
 		return null;
 	}
@@ -432,22 +399,16 @@ public class DirectoryHandling
 	public static void main(String[] args)
 	{
 		XSLTTransformer x = new XSLTTransformer(args[0]);
-		XSLTTransformer.inputEncoding = "iso-8859-1";
-		FileFilter fnf = new FileFilter() 
+		FileFilter fnf = new FileFilter()
 		{
-			public boolean accept(File  file) 
+			@Override
+			public boolean accept(File  file)
 			{
 				System.err.println("filtering: " + file);
-				if (file.isFile())
-				{
-					return file.getName().endsWith(".xml");
-				} else
-				{
-					return true;
-				}
+				return file.isFile() && file.getName().endsWith(".xml");
 			}
 		};
-		DirectoryHandling.ff =  fnf; 
+		DirectoryHandling.ff =  fnf;
 		DirectoryHandling.tagAllFilesInDirectory(x, args[1], args[2], true);
 	}
 }
