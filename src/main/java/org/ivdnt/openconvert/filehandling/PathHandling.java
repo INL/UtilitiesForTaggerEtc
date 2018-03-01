@@ -147,7 +147,6 @@ public class PathHandling
 						System.err.println("could not delete "  + outputPath);
 					}
 				}
-				inStream.close();
 			} catch (IOException e)
 			{
 				e.printStackTrace();

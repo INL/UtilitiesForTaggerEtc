@@ -21,7 +21,7 @@ public abstract class SimpleInputOutputProcess implements FileInputOutputProcess
 	 *
 	 * @param inFileName
 	 * @param outFileName
-	 * @throws ConversionException
+	 * @throws SimpleProcessException
 	 */
 	@Override
 	public void handleFile(String inFileName, String outFileName) throws SimpleProcessException {

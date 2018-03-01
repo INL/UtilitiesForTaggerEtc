@@ -19,8 +19,8 @@ public class TabSeparatedFile
 	public String[] fieldNames;
 	public String[] currentRow = null;
 	String separator = "\t";
-	Map<String,Integer> fieldNumbers = new HashMap<String,Integer>();
-	List<String[]> rows = new ArrayList<String[]>();
+	Map<String,Integer> fieldNumbers = new HashMap<>();
+	List<String[]> rows = new ArrayList<>();
 	public boolean munched = false;
 
 	public TabSeparatedFile(String fileName, String[] fields)
@@ -155,7 +155,7 @@ public class TabSeparatedFile
 
 	public List<String> getColumn(String colName) throws IOException
 	{
-		List<String> r = new ArrayList<String>();
+		List<String> r = new ArrayList<>();
 		if (!munched)
 			munch();
 		for (int i=0; i < size(); i++)
