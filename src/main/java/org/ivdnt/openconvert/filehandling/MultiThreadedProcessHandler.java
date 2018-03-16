@@ -42,18 +42,18 @@ public class MultiThreadedProcessHandler extends SimpleInputOutputProcess implem
 	}
 
 	@Override
-	public void handleStream(InputStream stream) {
-		handleStream(this.unaryStreamHandler, stream);
+	public void handleStream(InputStream stream, Charset ics) {
+		handleStream(this.unaryStreamHandler, stream, ics);
 	}
 
-	public static Future<Void> handleStream(final DoSomethingWithStream handler, final InputStream stream) {
+	public static Future<Void> handleStream(final DoSomethingWithStream handler, final InputStream stream, final Charset ics) {
 		if (handler == null || stream == null)
 			throw new NullPointerException();
 
 		return pool.submit(new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
-				handler.handleStream(stream);
+				handler.handleStream(stream, ics);
 				return null;
 			}
 		});

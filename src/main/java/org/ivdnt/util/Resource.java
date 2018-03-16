@@ -42,7 +42,7 @@ public class Resource
 				e.printStackTrace();
 			}
 
-			java.net.URL url = Resource.class.getResource(resourceFolder + "/" + s);
+			java.net.URL url = Resource.class.getResource("/" + resourceFolder + "/" + s);
 			System.err.println("jar url " + url);
 			// or URL from web
 			if (url == null) url = new java.net.URL(s);

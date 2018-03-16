@@ -1,14 +1,16 @@
 package org.ivdnt.util;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 /*
  * ParseUtils.java
  *
@@ -29,6 +31,7 @@ import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.apache.commons.io.input.BOMInputStream;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -394,9 +397,7 @@ public class XML
 		{
 			factory.setFeature( "http://apache.org/xml/features/dom/defer-node-expansion", false );
 			DocumentBuilder builder = factory.newDocumentBuilder();
-			byte[] bytes = inputString.getBytes("UTF-8");
-			InputStream input = new ByteArrayInputStream(bytes);
-			return builder.parse(input);
+			return builder.parse(new InputSource(new StringReader(inputString)));
 		} catch (Exception e)
 		{
 			e.printStackTrace();
@@ -404,8 +405,23 @@ public class XML
 		}
 	}
 
-	public static Document parseStream(InputStream inputStream, boolean namespaceAware)
+	/**
+	 *
+	 * @param is
+	 * @param cs (optional) encoding of the stream, attempts to autodetect if missing.
+	 * @param namespaceAware
+	 * @return
+	 */
+	public static Document parseStream(InputStream is, Charset cs, boolean namespaceAware)
 	{
+		if (cs == null) {
+			BOMInputStream bis = (is instanceof BOMInputStream) ? ((BOMInputStream)is) : new BOMInputStream(is);
+			is = bis;
+			String csName;
+			try {csName = bis.getBOMCharsetName();} catch (IOException e) {throw new RuntimeException(e);}
+			cs = csName != null ? Charset.forName(csName) : StandardCharsets.UTF_8;
+		}
+
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		factory.setNamespaceAware(namespaceAware);
 		try
@@ -414,7 +430,7 @@ public class XML
 			factory.setFeature( "http://apache.org/xml/features/dom/defer-node-expansion", false );
 			DocumentBuilder builder = factory.newDocumentBuilder();
 
-			return builder.parse(inputStream);
+			return builder.parse(new InputSource(new InputStreamReader(is, cs)));
 		} catch (Exception e)
 		{
 			e.printStackTrace();

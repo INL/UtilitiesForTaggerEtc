@@ -51,7 +51,7 @@ public class PathHandlingNoOutput
 				InputStream i1 = Files.newInputStream(inputPath);
 				BufferedInputStream inStream = new BufferedInputStream(i1);
 			) {
-				 p.handleStream(inStream) ;
+				 p.handleStream(inStream, null) ;
 			} catch (Exception e)
 			{
 				System.err.println("Exception in conversion " + p.getClass());
