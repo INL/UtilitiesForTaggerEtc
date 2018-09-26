@@ -23,6 +23,7 @@ public abstract class SimpleInputOutputProcess implements FileInputOutputProcess
 	 * @param outFileName
 	 * @throws SimpleProcessException
 	 */
+
 	@Override
 	public void handleFile(String inFileName, String outFileName) throws SimpleProcessException {
 		try (
@@ -38,4 +39,8 @@ public abstract class SimpleInputOutputProcess implements FileInputOutputProcess
 			e.printStackTrace();
 		}
 	}
+
+      public void close()
+      {  
+      }
 }
