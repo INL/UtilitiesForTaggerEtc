@@ -16,6 +16,7 @@ import java.nio.charset.Charset;
  */
 public abstract class SimpleInputOutputProcess implements FileInputOutputProcess, StreamInputOutputProcess
 {
+     java.util.Properties properties;
 	/**
 	 * Delegate to {@link SimpleInputOutputProcess#handleStream(InputStream, Charset, OutputStream)}, the streams are buffered, and closed after usage.
 	 *
@@ -40,7 +41,21 @@ public abstract class SimpleInputOutputProcess implements FileInputOutputProcess
 		}
 	}
 
+        public void setProperties(java.util.Properties properties)
+        {
+                // TODO Auto-generated method stub
+                this.properties = properties;
+        }
+
+	
       public void close()
       {  
+      }
+      
+      /* dummy method */
+      @Override
+      public void handleStream(InputStream is, Charset ics, OutputStream os) throws SimpleProcessException, IOException
+      {
+    	  
       }
 }

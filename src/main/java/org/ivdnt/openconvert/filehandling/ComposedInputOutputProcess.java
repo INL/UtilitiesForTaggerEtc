@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.File;
 
 import org.apache.commons.io.IOUtils;
 
@@ -29,6 +30,39 @@ public class ComposedInputOutputProcess extends SimpleInputOutputProcess
 		steps.addAll(l);
 	}
 
+        @Override
+        public void handleFile(String inFilename, String outFilename)// throws ConversionException
+        {
+                // TODO Auto-generated method stub
+                File previousOut = null;
+                for (int i =0; i < steps.size(); i++)
+                {
+                        SimpleInputOutputProcess step = (SimpleInputOutputProcess) steps.get(i);
+                        String in = i==0?inFilename:previousOut.getPath();
+                        String out = null;
+                        File x = null;
+                        if (i==steps.size()-1)
+                                out = outFilename;
+                        else
+                        {
+                                try
+                                {
+                                        x = File.createTempFile("step.", "tmp");
+                                        out = x.getPath();
+                                        x.delete(); // this is ugly and wrong
+                                } catch (Exception e)
+                                {
+                                        e.printStackTrace();
+                                }
+                        }
+                        try
+                        {
+                           step.handleFile(in, out);
+                         } catch (Exception e) { e.printStackTrace(); }
+                        previousOut = x;
+                }
+        }
+        
 	@Override
 	public void handleStream(InputStream is, Charset ics, OutputStream os) throws IOException, SimpleProcessException {
 		try {

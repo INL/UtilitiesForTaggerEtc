@@ -647,6 +647,28 @@ public class XML
 		}
 	}
 
+	public static void findTextNodesBelow(List<Node> list, Element e) // nonrecursive
+	{
+		NodeList children = e.getChildNodes();
+		for (int k = 0; k < children.getLength(); k++)
+		{
+			Node c = children.item(k);
+			if (c.getNodeType() == Node.ELEMENT_NODE)
+			{
+				Element child = (Element) c;
+				
+				{
+					
+				
+					 findTextNodesBelow(list, child);
+				}
+				
+			} else if (c.getNodeType() == Node.TEXT_NODE)
+			{
+				list.add(c);
+			}
+		}
+	}
 	public static String escapeForAttribute(String v)
 	{
 		v = v.replaceAll("&", "&amp;");
