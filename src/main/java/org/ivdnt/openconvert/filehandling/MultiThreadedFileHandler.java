@@ -1,6 +1,8 @@
 package org.ivdnt.openconvert.filehandling;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,6 +60,33 @@ public class MultiThreadedFileHandler extends SimpleInputOutputProcess implement
 				}
 		}
 	}
+
+ 	public class BinaryStreamTask implements Runnable
+        {
+                InputStream inFile = null;
+                OutputStream outFile = null;
+		java.nio.charset.Charset enc = null;
+                public  BinaryStreamTask(InputStream inFile, java.nio.charset.Charset enc, OutputStream outFile)
+                {
+                        this.inFile = inFile;
+                        this.outFile = outFile;
+			this.enc = enc;
+                }
+                //@Override
+                public void run()
+                {
+                        if (inFile != null && baseHandler2 != null)
+                                try
+                                {
+                                        baseHandler2.handleStream(inFile,enc, outFile);
+                                } catch (Exception e)
+                                {
+                                        // TODO Auto-generated catch block
+                                        e.printStackTrace();
+                                }
+                }
+        }
+
 	
 	public MultiThreadedFileHandler(DoSomethingWithFile h, int nThreads)
 	{
@@ -86,6 +115,14 @@ public class MultiThreadedFileHandler extends SimpleInputOutputProcess implement
 		BinaryTask t = new BinaryTask(in,out);
 		pool.execute(t);
 	}
+
+        public void handleStream(InputStream in, java.nio.charset.Charset enc, OutputStream out)
+        {
+                // TODO Auto-generated method stub
+                BinaryStreamTask t = new BinaryStreamTask(in,enc,out);
+                pool.execute(t);
+        }
+
 	
 	public void shutdown()
 	{
