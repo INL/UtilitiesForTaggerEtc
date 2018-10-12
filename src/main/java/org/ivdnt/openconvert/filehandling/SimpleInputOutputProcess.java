@@ -51,11 +51,4 @@ public abstract class SimpleInputOutputProcess implements FileInputOutputProcess
       public void close()
       {  
       }
-      
-      /* dummy method */
-      @Override
-      public void handleStream(InputStream is, Charset ics, OutputStream os) throws SimpleProcessException, IOException
-      {
-    	  
-      }
 }
