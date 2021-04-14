@@ -25,7 +25,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.IOUtils;
 
-
 public class PathHandling
 {
 	static int max = Integer.MAX_VALUE;
@@ -202,11 +201,12 @@ public class PathHandling
 		}
 	}
 
-	@SuppressWarnings("restriction") // maybe do something about this?
+	//@SuppressWarnings("restriction") // maybe do something about this?
 	public static Path possiblyReopen(Path p)
 	{
 		FileSystem fs = p.getFileSystem();
-		if (!(fs.provider() instanceof com.sun.nio.zipfs.ZipFileSystemProvider))
+
+		if (!fs.provider().getClass().getSimpleName().equals("ZipFileSystemProvider"))
 		{
 			return p;
 		}
