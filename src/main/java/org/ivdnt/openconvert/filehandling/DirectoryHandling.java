@@ -103,75 +103,79 @@ public class DirectoryHandling {
 		}
 	}
 
-	public static void tagAllFilesInDirectory(FileInputOutputProcess p, String folderName, String outFolderName) {
+	@SuppressWarnings("resource")
+    public static void tagAllFilesInDirectory(FileInputOutputProcess p, String folderName, String outFolderName) {
 		if (usePathHandler) {
 			traverseDirectory(p, folderName, outFolderName);
 			return;
 		}
 		OutputToZip otz = null;
-		if (outFolderName.endsWith(".zip") && !(p instanceof org.ivdnt.openconvert.filehandling.OutputToZip)) {
+		boolean shouldWrapWithOutputToZip = outFolderName.endsWith(".zip") && !(p instanceof org.ivdnt.openconvert.filehandling.OutputToZip);
+        if (shouldWrapWithOutputToZip) {
 			otz = new OutputToZip(outFolderName, p);
 			p = otz;
 		}
+        try {
+    		File f = new File(folderName);
 
-		File f = new File(folderName);
+    		if (!f.exists()) {
+    			try {
+    				File downloaded = DirectoryHandling.downloadURL(folderName);
+    				if (downloaded != null) {
+    					p.handleFile(downloaded.getCanonicalPath(), outFolderName);
+    					downloaded.delete();
+    				}
+    			} catch (Exception e) {
 
-		if (!f.exists()) {
-			try {
-				File downloaded = DirectoryHandling.downloadURL(folderName);
-				if (downloaded != null) {
-					p.handleFile(downloaded.getCanonicalPath(), outFolderName);
-					downloaded.delete();
-				}
-			} catch (Exception e) {
+    				e.printStackTrace();
+    			}
+    		}
 
-				e.printStackTrace();
-			}
-		}
+    		if (f.isFile()) {
+    			if (folderName.toLowerCase().endsWith(".zip")) // ahem just a test
+    			{
+    				DoSomethingWithFile dswf = new Wrapper(p, outFolderName);
+    				handleZip(folderName, dswf);
+    			} else {
+    				File outFile = new File(outFolderName);
 
-		if (f.isFile()) {
-			if (folderName.toLowerCase().endsWith(".zip")) // ahem just a test
-			{
-				DoSomethingWithFile dswf = new Wrapper(p, outFolderName);
-				handleZip(folderName, dswf);
-			} else {
-				File outFile = new File(outFolderName);
+    				if (!outFile.isDirectory()) {
+    					try {
+    						p.handleFile(f.getCanonicalPath(), outFolderName);
+    					} catch (Exception e) {
+    						e.printStackTrace();
+    					}
+    				}
+    			}
+    		}
 
-				if (!outFile.isDirectory()) {
-					try {
-						p.handleFile(f.getCanonicalPath(), outFolderName);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}
-
-		if (f.isDirectory()) {
-			File[] entries = f.listFiles();
-			for (File x : entries) {
-				String base = x.getName();
-				System.err.println(base);
-				if (x.isFile()) {
-					try {
-						File outFile = new File(outFolderName + "/" + base);
-						if (!outFile.exists()) {
-							p.handleFile(x.getCanonicalPath(), outFolderName + "/" + base);
-						}
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				} else {
-					try {
-						tagAllFilesInDirectory(p, x.getCanonicalPath(), outFolderName);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}
-		if (otz != null)
-			otz.close();
+    		if (f.isDirectory()) {
+    			File[] entries = f.listFiles();
+    			for (File x : entries) {
+    				String base = x.getName();
+    				System.err.println(base);
+    				if (x.isFile()) {
+    					try {
+    						File outFile = new File(outFolderName + "/" + base);
+    						if (!outFile.exists()) {
+    							p.handleFile(x.getCanonicalPath(), outFolderName + "/" + base);
+    						}
+    					} catch (Exception e) {
+    						e.printStackTrace();
+    					}
+    				} else {
+    					try {
+    						tagAllFilesInDirectory(p, x.getCanonicalPath(), outFolderName);
+    					} catch (Exception e) {
+    						e.printStackTrace();
+    					}
+    				}
+    			}
+    		}
+        } finally {
+    		if (otz != null)
+    			otz.close();
+        }
 	}
 
 	/**
