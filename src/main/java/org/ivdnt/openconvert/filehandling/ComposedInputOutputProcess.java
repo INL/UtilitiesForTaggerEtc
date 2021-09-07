@@ -2,13 +2,13 @@ package org.ivdnt.openconvert.filehandling;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.File;
 
 import org.apache.commons.io.IOUtils;
 
@@ -62,8 +62,9 @@ public class ComposedInputOutputProcess extends SimpleInputOutputProcess
                         previousOut = x;
                 }
         }
-        
-	@Override
+
+	@SuppressWarnings("deprecation")
+    @Override
 	public void handleStream(InputStream is, Charset ics, OutputStream os) throws IOException, SimpleProcessException {
 		try {
 			ByteArrayOutputStream _os = new ByteArrayOutputStream(); // can be reused between steps, close() is no-op
